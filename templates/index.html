@@ -4,16 +4,19 @@
     <meta charset="UTF-8">
     <title>Title</title>
 </head>
+
 <body>
 {% set title = "Main" %}
-<img src="graphic.png" alt="123">
+<img src="img" alt="123">
+environment.filters['b64decode'] = base64.b64decode
+{{ img|b64decode }}
+
 {% if cpu_stats %}
     <ul>
     {% for cpu_data in cpu_stats %}
         <li>{{ cpu_data }}</li>
     {% endfor %}
     </ul>
-<div class="img-div" style="background-image: url('{{ img }}');">
  </div>
 {% else %}
     <p>No questions are available.</p>
