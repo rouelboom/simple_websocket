@@ -7,4 +7,5 @@
 psutil
 aiohttp
 websockets
-
+pyyaml
+aiohttp_jinja2

@@ -15,10 +15,11 @@ async def consumer_handler(websocket: websockets.WebSocketClientProtocol) -> Non
 
 
 async def consume(hostname: str, port: int) -> None:
-    websocket_resource_url = f'ws://{hostname}:{port}'
+    websocket_resource_url = f'ws://{hostname}:{port}/ws'
     async with websockets.connect(websocket_resource_url) as websocket:
         print('Wait for handle...')
         await consumer_handler(websocket)
+
 
 async def produce(message: str, host: str, port: int) -> None:
     async with websockets.connect(f'ws://{host}:{port}') as ws:
@@ -28,7 +29,7 @@ async def produce(message: str, host: str, port: int) -> None:
 if __name__ == '__main__':
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(consume(hostname='localhost', port=4000))
+    loop.run_until_complete(consume(hostname='0.0.0.0', port=8080))
     loop.run_forever()
 
 

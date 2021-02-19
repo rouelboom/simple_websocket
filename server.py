@@ -34,9 +34,14 @@ class Server():
                 await self.send_to_clients(message)
                 await asyncio.sleep(1)
 
+async def main():
+    pass
 
-server = Server()
-start_server = websockets.serve(server.ws_handler, 'localhost', 4000)
-loop = asyncio.get_event_loop()
-loop.run_until_complete(start_server)
-loop.run_forever()
+
+if __name__ == '__main__':
+
+    server = Server()
+    start_server = websockets.serve(server.ws_handler, 'localhost', 4000)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_server)
+    loop.run_forever()
