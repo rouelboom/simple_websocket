@@ -24,12 +24,14 @@ def get_value_from_database():
 #     return {'cpu_stats': data, 'img': content}
 #     # return web.Response(body=content, content_type='image/png')
 
+@aiohttp_jinja2.template('index.html')
 async def index(request):
     data = get_value_from_database()
     img_bytes = make_image_by_dots(data)
-    # img_tag = "<img src='data:image/png;base64,'" + img_buffer.getvalue() + "</img>"
     img_tag = "<img src='data:image/png;base64," + base64.b64encode(img_bytes.getvalue()).decode() + "'/>"
-    return web.Response(body=img_tag, content_type='text/html')
+    return {'img': img_tag}
+
+    # return web.Response(body=img_tag, content_type='text/html')
 
 async def stream_show(request):
     return web.Response(text='Hello')

@@ -7,9 +7,10 @@
 
 <body>
 {% set title = "Main" %}
-<img src="img" alt="123">
+<!--<img src="img" alt="123">-->
+{{ img|safe }}
 environment.filters['b64decode'] = base64.b64decode
-{{ img|b64decode }}
+
 
 {% if cpu_stats %}
     <ul>
