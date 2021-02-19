@@ -31,7 +31,6 @@ async def index(request):
     img_tag = "<img src='data:image/png;base64," + base64.b64encode(img_bytes.getvalue()).decode() + "'/>"
     return {'img': img_tag}
 
-    # return web.Response(body=img_tag, content_type='text/html')
 
 async def stream_show(request):
     return web.Response(text='Hello')
