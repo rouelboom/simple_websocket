@@ -1,7 +1,7 @@
 import asyncio
 import sqlite3
 from io import BytesIO
-from PIL import ImageDraw, ImageColor, Image
+from PIL import ImageDraw, ImageColor, Image, ImageFont
 import datetime as dt
 import psutil
 
@@ -84,17 +84,21 @@ class Point():
 
 
 def make_draw_area():
-    width = 700
-    height = 700
+    width = 1130
+    height = 550
     LINES = 720  # количество отметок в графике по 5сек
 
     image = Image.new("RGB", (width, height))
     draw = ImageDraw.Draw(image)
     draw.rectangle((0, 0, width, height), fill=ImageColor.getrgb("white"))
-    # тут надо преобразовать точки в систему координат нашего графика
+    # написать функцию, которая строит точку относительна нулевой координаты
+    # (x = 50, y = 500)
+    # и написать функцию реверсирующую OY
 
-    draw.line((50, 1000, 1050, 1000), fill=ImageColor.getrgb("black")) # ось Х
-    draw.line((50, 0, 50, 1000), fill=ImageColor.getrgb("black"))  # ось Y
-    draw.text((10, 10), text='text', fill=ImageColor.getrgb("black"))
+    draw.line((35, 500, 1130, 500), fill=ImageColor.getrgb("black")) # ось Х
+    draw.line((50, 0, 50, 515), fill=ImageColor.getrgb("black"))  # ось Y
+    myfont = ImageFont.truetype("arial.ttf", 20)
+
+    draw.text((35, 505), text='0', fill=ImageColor.getrgb("black"), font=myfont)
 
     return image, draw
