@@ -4,18 +4,15 @@ import jinja2
 import asyncio
 import websockets
 
-from settings.settings import config, BASE_DIR
+from settings.settings import config, BASE_DIR, UPDATE_DATA_TIME
 from routes import setup_routes
 from websocket_server import my_websocket_server
 from system_logger import system_log_process
 
 
 async def run_shit():
-    try:
-        task = asyncio.create_task(system_log_process(5))
-        asyncio.gather(task)
-    except:
-        pass
+    task = asyncio.create_task(system_log_process(UPDATE_DATA_TIME))
+    asyncio.gather(task)
 
 if __name__ == '__main__':
     try:

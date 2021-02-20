@@ -4,8 +4,6 @@ from io import BytesIO
 from PIL import ImageDraw, ImageColor, Image
 import datetime as dt
 import psutil
-import pathlib
-import os
 
 
 def init_database():
@@ -28,13 +26,12 @@ async def system_log_process(period=5):
             cpu = psutil.cpu_percent()
             memory = psutil.virtual_memory().percent
             now_time = dt.datetime.now()
-            # print('memory', memory)
-            print('cpu', cpu)
-            # print('now is: ', now_time)
+            # print(now_time)
+            # print('cpu', cpu)
+
             cursor.execute('INSERT INTO sys_log VALUES (?, ?, ?)',
                            (cpu, memory, now_time))
             con.commit()
-            # time.sleep(period)
             await asyncio.sleep(period)
         except asyncio.CancelledError:
             con.close()
@@ -44,10 +41,18 @@ async def system_log_process(period=5):
 def get_value_from_database():
     db_connection = sqlite3.connect('system-loading.db.sqlite')
     cursor = db_connection.cursor()
-    cursor.execute("SELECT cpu FROM sys_log")
-    cpu = cursor.fetchall()
-    # print(cpu)
-    return cpu
+    # cursor.execute("SELECT cpu FROM sys_log")
+
+    cursor.execute("""SELECT cpu, mem 
+                      FROM sys_log
+                      WHERE check_time > datetime('now','-1 hours')
+                      ORDER BY check_time
+                      LIMIT 720;
+                      """)
+    data = cursor.fetchall()
+    print(len(data))
+    print(data)
+    return data
 
 
 def make_image_by_dots(points):
@@ -60,20 +65,16 @@ def make_image_by_dots(points):
 
     x = 0
     for i in range(len(points) - 1):
-        draw.line((x, points[i][0]* 10, x + 10, points[i + 1][0]* 100),
+        draw.line((x, points[i][0]* 10, x + 10, points[i + 1][0] * 100),
                   fill=ImageColor.getrgb("red"))
         x += 10
 
-    fp = BytesIO()
+    img_file= BytesIO()
+    # image.save("templates/graphic.jpg", "JPEG")
+    image.save(img_file, format="PNG")
+    img_file.seek(0)
 
-    image.save("templates/graphic.jpg", "JPEG")
-    image.save(fp, format="PNG")
-    fp.seek(0)
-    # path_to_image = os.path.abspath('templates/graphic.jpg')
-    # print(path_to_image)
-    # print(os.path.abspath('templates/graphic.png'))
-    # return image, path_to_image
-    return fp
+    return img_file
 
 
 class Point():

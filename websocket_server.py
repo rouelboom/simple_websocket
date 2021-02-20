@@ -2,16 +2,14 @@ import asyncio
 import logging
 import base64
 
-import websockets
-import aiohttp
-from aiohttp import web
 from websockets import WebSocketServerProtocol
+import websockets
 
 from system_logger import make_image_by_dots, get_value_from_database
+from settings.settings import UPDATE_DATA_TIME
 
 
 logging.basicConfig(level=logging.INFO)
-
 
 
 class my_websocket_server():
@@ -37,28 +35,15 @@ class my_websocket_server():
             await self.unregister(ws)
 
     async def distribute(self, ws: WebSocketServerProtocol) -> None:
-        async for message in ws:
-            print(message)
-            counter = 1
-            # это не красиво, но пока по другому не придумал
-            while True:
+        while True:
+            try:
                 data = get_value_from_database()
                 img_bytes = make_image_by_dots(data)
-
-                dots = []
-                for i in range(counter):
-                    dots.append(i)
                 img_tag = "<img src='data:image/png;base64," + base64.b64encode(
                             img_bytes.getvalue()).decode() + "'/>"
-                counter += 1
 
                 await ws.send(img_tag)
-                await asyncio.sleep(1)
+                await asyncio.sleep(UPDATE_DATA_TIME)
 
-
-# if __name__ == '__main__':
-#     server = my_websocket_server()
-#     start_server = websockets.serve(server.ws_handler, '0.0.0.0', 4000)
-#     loop = asyncio.get_event_loop()
-#     loop.run_until_complete(start_server)
-#     loop.run_forever()
+            except websockets.exceptions.ConnectionClosedOK:
+                break

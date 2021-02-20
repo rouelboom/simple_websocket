@@ -5,16 +5,8 @@ import sqlite3
 import base64
 import websockets
 
-from system_logger import make_image_by_dots
+from system_logger import make_image_by_dots, get_value_from_database
 
-
-def get_value_from_database():
-    db_connection = sqlite3.connect('system-loading.db.sqlite')
-    cursor = db_connection.cursor()
-    cursor.execute("SELECT cpu FROM sys_log")
-    cpu = cursor.fetchall()
-    # print(cpu)
-    return cpu
 
 @aiohttp_jinja2.template('index.html')
 async def index(request):
