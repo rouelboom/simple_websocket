@@ -9,15 +9,6 @@
 <a href="/ws">go to dynamic state</a>
 <br>
 {{ img|safe }}
-{% if cpu_stats %}
-    <ul>
-    {% for cpu_data in cpu_stats %}
-        <li>{{ cpu_data }}</li>
-    {% endfor %}
-    </ul>
- </div>
-{% else %}
-    <p>No questions are available.</p>
-{% endif %}
+
 </body>
 </html>
