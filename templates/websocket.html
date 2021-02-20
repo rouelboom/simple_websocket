@@ -7,27 +7,30 @@
          function WebSocketTest() {
 
             if ("WebSocket" in window) {
-               alert("WebSocket is supported by your Browser!");
+<!--               alert("WebSocket is supported by your Browser!");-->
 
                // Let us open a web socket
-               var ws = new WebSocket("ws://localhost:9998/echo");
+               var ws = new WebSocket("ws://0.0.0.0:4000/");
 
                ws.onopen = function() {
 
                   // Web Socket is connected, send data using send()
                   ws.send("Message to send");
-                  alert("Message is sent...");
+<!--                  alert("Message is sent...");-->
                };
 
                ws.onmessage = function (evt) {
                   var received_msg = evt.data;
-                  alert("Message is received...");
+                  document.getElementById('test_1').innerHTML = received_msg;
+
+
+<!--                  alert("Message is received...", evt.data);-->
                };
 
                ws.onclose = function() {
 
                   // websocket is closed.
-                  alert("Connection is closed...");
+<!--                  alert("Connection is closed...");-->
                };
             } else {
 
@@ -43,6 +46,9 @@
       <div id = "sse">
          <a href = "javascript:WebSocketTest()">Run WebSocket</a>
       </div>
+   <p id="test_1"></p>
+   <p id="test_2"></p>
+
 
    </body>
 </html>

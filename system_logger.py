@@ -28,9 +28,9 @@ async def system_log_process(period=5):
             cpu = psutil.cpu_percent()
             memory = psutil.virtual_memory().percent
             now_time = dt.datetime.now()
-            print('memory', memory)
+            # print('memory', memory)
             print('cpu', cpu)
-            print('now is: ', now_time)
+            # print('now is: ', now_time)
             cursor.execute('INSERT INTO sys_log VALUES (?, ?, ?)',
                            (cpu, memory, now_time))
             con.commit()
@@ -40,17 +40,26 @@ async def system_log_process(period=5):
             con.close()
 
 
+def get_value_from_database():
+    db_connection = sqlite3.connect('system-loading.db.sqlite')
+    cursor = db_connection.cursor()
+    cursor.execute("SELECT cpu FROM sys_log")
+    cpu = cursor.fetchall()
+    # print(cpu)
+    return cpu
+
+
 def make_image_by_dots(points):
 
     image, draw = make_draw_area()
     x = 0
     for point in points:
-        draw.point((x, point[0] * 100), fill=ImageColor.getrgb("red"))
+        draw.point((x, point[0] * 10), fill=ImageColor.getrgb("red"))
         x += 10
 
     x = 0
     for i in range(len(points) - 1):
-        draw.line((x, points[i][0]* 100, x + 10, points[i + 1][0]* 100),
+        draw.line((x, points[i][0]* 10, x + 10, points[i + 1][0]* 100),
                   fill=ImageColor.getrgb("red"))
         x += 10
 
@@ -73,8 +82,8 @@ class Point():
 
 
 def make_draw_area():
-    width = 1050
-    height = 1050
+    width = 700
+    height = 700
     LINES = 720  # количество отметок в графике по 5сек
 
     image = Image.new("RGB", (width, height))
