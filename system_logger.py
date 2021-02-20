@@ -36,8 +36,9 @@ async def system_log_process(period=5):
             con.commit()
             # time.sleep(period)
             await asyncio.sleep(period)
-        except KeyboardInterrupt:
+        except asyncio.CancelledError:
             con.close()
+            break
 
 
 def get_value_from_database():
