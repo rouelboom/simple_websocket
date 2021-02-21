@@ -5,6 +5,10 @@ from PIL import ImageDraw, ImageColor, Image, ImageFont
 import datetime as dt
 import psutil
 
+AXIS_Y_LENGTH = 500
+AXIS_X_LENGTH = 50
+Y_SCALE = 5
+X_SCALE= 1.5
 
 def init_database():
     db_connection = sqlite3.connect('system-loading.db.sqlite')
@@ -58,19 +62,24 @@ def get_value_from_database():
 def make_image_by_dots(points):
 
     image, draw = make_draw_area()
-    x = 0
-    for point in points:
-        draw.point((x, point[0] * 10), fill=ImageColor.getrgb("red"))
-        x += 10
 
-    x = 0
     for i in range(len(points) - 1):
-        draw.line((x, points[i][0]* 10, x + 10, points[i + 1][0] * 100),
-                  fill=ImageColor.getrgb("red"))
-        x += 10
+        x1 = transform_X_coord_to_asixs(i)
+        x2 = transform_X_coord_to_asixs(i + 1)
+        y1 = transform_Y_coord_to_asixs(points[i][0])
+        y2 = transform_Y_coord_to_asixs(points[i + 1][0] )
+
+        draw.line((x1, y1, x2, y2), fill=ImageColor.getrgb('red'))
+
+    for i in range(len(points) - 1):
+        x1 = transform_X_coord_to_asixs(i)
+        x2 = transform_X_coord_to_asixs(i + 1)
+        y1 = transform_Y_coord_to_asixs(points[i][1])
+        y2 = transform_Y_coord_to_asixs(points[i + 1][1])
+
+        draw.line((x1, y1, x2, y2), fill=ImageColor.getrgb('green'))
 
     img_file= BytesIO()
-    # image.save("templates/graphic.jpg", "JPEG")
     image.save(img_file, format="PNG")
     img_file.seek(0)
 
@@ -102,3 +111,9 @@ def make_draw_area():
     draw.text((35, 505), text='0', fill=ImageColor.getrgb("black"), font=myfont)
 
     return image, draw
+
+def transform_Y_coord_to_asixs(y):
+    return AXIS_Y_LENGTH - (y * Y_SCALE)
+
+def transform_X_coord_to_asixs(x):
+    return AXIS_X_LENGTH + (x * X_SCALE)
