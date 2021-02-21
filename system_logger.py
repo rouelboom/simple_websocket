@@ -19,6 +19,7 @@ def init_database():
                                      detect_types=sqlite3.PARSE_DECLTYPES |
                                                   sqlite3.PARSE_COLNAMES
                                     )
+
     cursor = db_connection.cursor()
     cursor.execute('''
                    CREATE TABLE IF NOT EXISTS 'sys_log' (
@@ -51,12 +52,11 @@ def get_value_from_database():
     db_connection = sqlite3.connect('system-loading.db.sqlite')
     cursor = db_connection.cursor()
 
-    # cursor.execute("""SELECT cpu, mem, check_time FROM sys_log WHERE check_time >= date_sub(now(), interval 1 hour) ORDER BY check_time;""")
-    cursor.execute("SELECT cpu, mem, check_time FROM sys_log WHERE check_time >= datetime('now', '-1 hours');")
-    # LIMIT 720
-    # ORDER BY check_time;
-    #date_sub(now(), interval 1 hour)
-    #WHERE check_time > datetime('now', '-1 hours')
+    last_hour = dt.datetime.now() - dt.timedelta(hours=1)
+    s = ("SELECT * FROM sys_log "
+         "WHERE check_time >= ? "
+         "ORDER BY check_time;")
+    cursor.execute(s, [last_hour])
 
     data = cursor.fetchall()
     print(len(data))
