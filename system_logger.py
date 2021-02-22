@@ -11,8 +11,11 @@ AXIS_X_LENGTH = 50
 Y_SCALE = 5
 X_SCALE = 1.5
 
-IMG_WIDTH = 1180
+IMG_WIDTH = 1130
 IMG_HIGTH = 550
+
+VALUE_FOR_MINS_TEXT = (IMG_WIDTH - AXIS_X_LENGTH) / 12
+
 
 FIVE_MIN_SCALE = 12
 
@@ -103,10 +106,10 @@ def make_draw_area():
                    fill=ImageColor.getrgb("white"))
 
     draw.line((AXIS_X_LENGTH - 15, AXIS_Y_LENGTH,
-              IMG_WIDTH - 50, AXIS_Y_LENGTH),
+              IMG_WIDTH, AXIS_Y_LENGTH),
               fill=ImageColor.getrgb("black"))  # ось Х
     draw.line((AXIS_X_LENGTH, 0, AXIS_X_LENGTH, AXIS_Y_LENGTH + 15),
-              fill=ImageColor.getrgb("black"))  # ось Y
+              fill=ImageColor.getrgb("black" ))  # ось Y
 
     myfont = ImageFont.truetype("arial.ttf", 12)
 
@@ -120,11 +123,16 @@ def make_draw_area():
 
     # полосочки и циферки по оси X
     for i in range(13):
-        draw.line((50 + (94.17 * (i + 1)), 495, 50 + (94.17 * (i + 1)), 505),
+        draw.line((50 + (VALUE_FOR_MINS_TEXT * (i + 1)), 495,
+                   50 + (VALUE_FOR_MINS_TEXT * (i + 1)), 505),
                   fill=ImageColor.getrgb('black'))
         time_text = f'{i * 5}'
-        draw.text((44 + (i * 94.17), 515), text=time_text,
+        draw.text((44 + (i * VALUE_FOR_MINS_TEXT), 515), text=time_text,
                   fill=ImageColor.getrgb("black"), font=myfont)
+
+    for i in range(720):
+        draw.line((50 + (1.5 * (i + 1)), 495, 50 + (1.5 * (i + 1)), 505),
+                  fill=ImageColor.getrgb('blue'))
 
     return image, draw
 
@@ -167,8 +175,9 @@ def prepare_for_paint(data):
     y_mem.append(data[last][1])
     y_cpu.append(data[last][0])
 
-    # print(len(y_mem))
-    # print(len(y_cpu))
+    # print('not converted len" ' + str(len(data)))
+    # print('converted len" ' + str(len(y_mem)))
+    print(len(y_cpu))
     return y_cpu, y_mem
 
     # return data[0], data[1]
