@@ -5,8 +5,8 @@ from PIL import ImageDraw, ImageColor, Image, ImageFont
 import datetime as dt
 import psutil
 
-AXIS_Y_LENGTH = 500
-AXIS_X_LENGTH = 50
+AXIS_Y_LENGTH = 520
+AXIS_X_LENGTH = 30
 
 Y_SCALE = 5
 X_SCALE = 1.5
@@ -14,7 +14,10 @@ X_SCALE = 1.5
 IMG_WIDTH = 1130
 IMG_HIGTH = 550
 
-VALUE_FOR_MINS_TEXT = (IMG_WIDTH - AXIS_X_LENGTH) / 12
+X_LENGTH = 1110
+Y_LENGTH = 530
+
+VALUE_FOR_MINS_TEXT_POSITION = (X_LENGTH - AXIS_X_LENGTH) / 12
 
 
 FIVE_MIN_SCALE = 12
@@ -104,34 +107,39 @@ def make_draw_area():
     draw = ImageDraw.Draw(image)
     draw.rectangle((0, 0, IMG_WIDTH, IMG_HIGTH),
                    fill=ImageColor.getrgb("white"))
-
-    draw.line((AXIS_X_LENGTH - 15, AXIS_Y_LENGTH,
-              IMG_WIDTH, AXIS_Y_LENGTH),
-              fill=ImageColor.getrgb("black"))  # ось Х
-    draw.line((AXIS_X_LENGTH, 0, AXIS_X_LENGTH, AXIS_Y_LENGTH + 15),
-              fill=ImageColor.getrgb("black" ))  # ось Y
+    # ось Х
+    draw.line((AXIS_X_LENGTH - 5, AXIS_Y_LENGTH,
+              X_LENGTH, AXIS_Y_LENGTH),
+              fill=ImageColor.getrgb("black"))
+    # ось Y
+    draw.line((AXIS_X_LENGTH, 0, AXIS_X_LENGTH, AXIS_Y_LENGTH + 5),
+              fill=ImageColor.getrgb("black" ))
 
     myfont = ImageFont.truetype("arial.ttf", 12)
 
     # полосочки и циферки по оси У
     for i in range(11):
         percent = f'{10 * i}%'
-        draw.text((5, 495 - 50 * i), text=percent,
+        draw.text((0, (AXIS_Y_LENGTH - 5) - 50 * i), text=percent,
                   fill=ImageColor.getrgb("black"), font=myfont)
-        draw.line((45, 500 - 50 * i, 55, 500 - 50 * i),
+        draw.line((AXIS_X_LENGTH - 5, AXIS_Y_LENGTH - 50 * i,
+                   AXIS_X_LENGTH + 5, AXIS_Y_LENGTH - 50 * i),
                   fill=ImageColor.getrgb('black'))
 
     # полосочки и циферки по оси X
     for i in range(13):
-        draw.line((50 + (VALUE_FOR_MINS_TEXT * (i + 1)), 495,
-                   50 + (VALUE_FOR_MINS_TEXT * (i + 1)), 505),
-                  fill=ImageColor.getrgb('black'))
+        draw.line((AXIS_X_LENGTH + (VALUE_FOR_MINS_TEXT_POSITION * (i)),
+                   AXIS_Y_LENGTH - 5,
+                   AXIS_X_LENGTH + (VALUE_FOR_MINS_TEXT_POSITION * (i)),
+                   AXIS_Y_LENGTH + 5), fill=ImageColor.getrgb('black'))
         time_text = f'{i * 5}'
-        draw.text((44 + (i * VALUE_FOR_MINS_TEXT), 515), text=time_text,
+        draw.text((AXIS_X_LENGTH - 6 + (i * VALUE_FOR_MINS_TEXT_POSITION),
+                  AXIS_Y_LENGTH + 10), text=time_text,
                   fill=ImageColor.getrgb("black"), font=myfont)
 
     for i in range(720):
-        draw.line((50 + (1.5 * (i + 1)), 495, 50 + (1.5 * (i + 1)), 505),
+        draw.line((AXIS_X_LENGTH + (1.5 * (i + 1)), AXIS_Y_LENGTH - 2,
+                   AXIS_X_LENGTH + (1.5 * (i + 1)), AXIS_Y_LENGTH + 2),
                   fill=ImageColor.getrgb('blue'))
 
     return image, draw
@@ -156,16 +164,12 @@ def prepare_for_paint(data):
 
     y_mem = []
     y_cpu = []
-    a = 0
-    b = 0
     for i in range(len(data) - 1):
         # Если наблюдается время между данными больше 5+1 сек - в буффер
         # добавляется нулевое значение логированного параметра
         if times[i + 1] - times[i] > dt.timedelta(seconds=6):
-            b += 1
             delta = ((times[i + 1] - times[i]).seconds / 5)
             for j in range(int(delta)):
-                a += 1
                 y_mem.append(0)
                 y_cpu.append(0)
         y_mem.append(data[i][1])
@@ -177,7 +181,4 @@ def prepare_for_paint(data):
 
     # print('not converted len" ' + str(len(data)))
     # print('converted len" ' + str(len(y_mem)))
-    print(len(y_cpu))
     return y_cpu, y_mem
-
-    # return data[0], data[1]
