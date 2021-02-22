@@ -12,7 +12,7 @@ from settings.settings import UPDATE_DATA_TIME
 logging.basicConfig(level=logging.INFO)
 
 
-class my_websocket_server():
+class websocket_stream():
     clients = set()
 
     async def register(self, ws: WebSocketServerProtocol) -> None:
@@ -38,7 +38,7 @@ class my_websocket_server():
         while True:
             try:
                 data = get_value_from_database()
-                img_bytes = make_image_by_dots(data)
+                img_bytes = make_image_by_dots(data, 'dynamic')
                 img_tag = "<img src='data:image/png;base64," + base64.b64encode(
                             img_bytes.getvalue()).decode() + "'/>"
 

@@ -6,7 +6,7 @@ import websockets
 
 from settings.settings import config, BASE_DIR, UPDATE_DATA_TIME
 from routes import setup_routes
-from websocket_server import my_websocket_server
+from websocket_server import websocket_stream
 from system_logger import system_log_process
 
 
@@ -16,7 +16,7 @@ async def run_shit():
 
 if __name__ == '__main__':
     try:
-        ws_server = my_websocket_server()
+        ws_server = websocket_stream()
         app = web.Application()
         setup_routes(app)
         aiohttp_jinja2.setup(app,
