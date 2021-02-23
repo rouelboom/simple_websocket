@@ -226,7 +226,7 @@ def prepare_for_paint(data):
                                                   milliseconds=200):
             inc += 1
             delta = ((times[i + 1] - times[i]).seconds / UPDATE_DATA_TIME)
-            print((times[i + 1] - times[i]))
+            # print((times[i + 1] - times[i]))
             for j in range(int(delta)):
                 y_mem.append(0)
                 y_cpu.append(0)
@@ -238,7 +238,7 @@ def prepare_for_paint(data):
         # # эти данные возникли из за слишком быстрого перезапуска программы
         elif times[i + 1] - times[i] < dt.timedelta(seconds=UPDATE_DATA_TIME-1,
                                                     milliseconds=900):
-            print(('less!', times[i + 1] - times[i]))
+            # print(('less!', times[i + 1] - times[i]))
             list_to_del.append(i + 1)
             y_mem.append(0)
             y_cpu.append(0)
@@ -251,7 +251,7 @@ def prepare_for_paint(data):
         y_mem.append(data[last][1])
         y_cpu.append(data[last][0])
 
-    print('not converted len" ' + str(len(data)))
-    print('converted len" ' + str(len(y_mem)))
-    print('inc = ', inc)
+    # print('not converted len" ' + str(len(data)))
+    # print('converted len" ' + str(len(y_mem)))
+    # print('inc = ', inc)
     return y_cpu, y_mem
