@@ -4,6 +4,9 @@ from io import BytesIO
 from PIL import ImageDraw, ImageColor, Image, ImageFont
 import datetime as dt
 import psutil
+from settings.settings import UPDATE_DATA_TIME
+
+LINES_COUNT = (60 / UPDATE_DATA_TIME) * 60
 
 AXIS_Y_LENGTH = 520
 AXIS_X_LENGTH = 30
@@ -14,13 +17,13 @@ X_SCALE = 1.5
 IMG_WIDTH = 1130
 IMG_HIGTH = 550
 
-X_LENGTH = 1110
-Y_LENGTH = 530
+X_LENGTH = LINES_COUNT * X_SCALE + AXIS_X_LENGTH
+Y_LENGTH = LINES_COUNT * Y_SCALE + AXIS_Y_LENGTH
 
 VALUE_FOR_MINS_TEXT_POSITION = (X_LENGTH - AXIS_X_LENGTH) / 12
 
-
 FIVE_MIN_SCALE = 12
+
 
 def init_database():
     db_connection = sqlite3.connect('system-loading.db.sqlite',
@@ -41,6 +44,7 @@ def init_database():
 async def system_log_process(period=5):
     while True:
         try:
+            await asyncio.sleep(period)
             con, cursor = init_database()
             cpu = psutil.cpu_percent()
             memory = psutil.virtual_memory().percent
@@ -49,7 +53,7 @@ async def system_log_process(period=5):
             cursor.execute('INSERT INTO sys_log VALUES (?, ?, ?)',
                            (cpu, memory, now_time))
             con.commit()
-            await asyncio.sleep(period)
+
         except asyncio.CancelledError:
             con.close()
             break
@@ -78,8 +82,13 @@ def make_image_by_dots(points: list, type_of_statistic: str):
     image, draw = make_draw_area()
     cpu, mem = prepare_for_paint(points)
 
-    draw_image(cpu, 'red', draw)
-    draw_image(mem, 'green', draw)
+    if type_of_statistic == 'dynamic':
+        draw_dynamic_image(cpu, 'red', draw)
+        draw_dynamic_image(mem, 'green', draw)
+    elif type_of_statistic == 'static':
+        cpu = get_middle_values(cpu);
+        draw_static_image(cpu, 'red', draw)
+        draw_static_image(mem, 'green', draw)
 
     img_file = BytesIO()
     image.save(img_file, format="PNG")
@@ -87,8 +96,32 @@ def make_image_by_dots(points: list, type_of_statistic: str):
 
     return img_file
 
+def get_middle_values(cpu):
+    buffer = []
+    i = 0
+    middle_values = []
+    for value in cpu:
+        buffer.append(cpu.pop(i))
+        if len(buffer) == 60:# or len(cpu) == 0:
+            middle_values.append(sum(buffer) / 60)
+            buffer.clear()
+            i += 1
+            print('middle values', len(middle_values))
+    return middle_values
 
-def draw_image(data: list, color: str, draw: ImageDraw):
+
+def draw_static_image(data: list, color: str, draw: ImageDraw):
+    x = 0
+    for i in range(len(data) - 1):
+        x1 = transform_x_coord_to_asixs(x)
+        x2 = transform_x_coord_to_asixs(x + 60)
+        y1 = transform_y_coord_to_asixs(data[i])
+        y2 = transform_y_coord_to_asixs(data[i + 1])
+        draw.line((x1, y1, x2, y2), fill=ImageColor.getrgb(color=color))
+        x += 60
+
+
+def draw_dynamic_image(data: list, color: str, draw: ImageDraw):
     """Полученные данные преобразуются в координаты ХУ, по которым
        рисуется изображение."""
     for i in range(len(data) - 1):
@@ -156,7 +189,13 @@ def transform_x_coord_to_asixs(x: float):
 def prepare_for_paint(data):
     """ Функция решает вопрос с недостающими данными за последний час.
      Т.е если в течении часа программа работала не всё время - в тот момент
-     когда она не работала в программу заносятся нулевые значения ЦП и ОП """
+     когда она не работала в программу заносятся нулевые значения ЦП и ОП
+     ------
+     Остался не решенный вопрос: если перезапускать программу быстрее чем за 5
+     секунд, то мы получим данные в БД с интервалом менее 1 сек. Эти данные
+     тоже отображаются на графике, и они находятся не на своём месте а также
+     сбивают положение всех послеющих точке по оси Х. Эта проблема не критична,
+     если не не перезапускать программу быстрее чем за 5 сек. """
     times = []
 
     for i in range(len(data)):
@@ -164,21 +203,33 @@ def prepare_for_paint(data):
 
     y_mem = []
     y_cpu = []
+    list_to_del = []
     for i in range(len(data) - 1):
         # Если наблюдается время между данными больше 5+1 сек - в буффер
         # добавляется нулевое значение логированного параметра
-        if times[i + 1] - times[i] > dt.timedelta(seconds=6):
+        if times[i + 1] - times[i] > dt.timedelta(seconds=5.1):
             delta = ((times[i + 1] - times[i]).seconds / 5)
             for j in range(int(delta)):
                 y_mem.append(0)
                 y_cpu.append(0)
-        y_mem.append(data[i][1])
-        y_cpu.append(data[i][0])
+                y_mem.append(data[i][1])
+                y_cpu.append(data[i][0])
+        # # Если наткнулись на данные, у которых интервал менее 5-0.5 сек,
+        # # выпиливаем эти данные и потом заполним их нулевыми. Скорее всего
+        # # эти данные возникли из за слишком быстрого перезапуска программы
+        elif times[i + 1] - times[i] < dt.timedelta(seconds=4.9):
+            list_to_del.append(i + 1)
+            y_mem.append(0)
+            y_cpu.append(0)
+        else:
+            y_mem.append(data[i][1])
+            y_cpu.append(data[i][0])
 
     last = len(data) - 1
     y_mem.append(data[last][1])
     y_cpu.append(data[last][0])
 
-    # print('not converted len" ' + str(len(data)))
-    # print('converted len" ' + str(len(y_mem)))
+    print('not converted len" ' + str(len(data)))
+    print('converted len" ' + str(len(y_mem)))
+    print('list to delet" ' + str(len(list_to_del)))
     return y_cpu, y_mem
