@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import base64
+import json
 
 from websockets import WebSocketServerProtocol
 import websockets
@@ -38,11 +39,17 @@ class websocket_stream():
         while True:
             try:
                 data = get_value_from_database()
-                img_bytes = make_image_by_dots(data, 'cpu', 'dynamic')
-                img_tag1 = "<img src='data:image/png;base64," + base64.b64encode(
-                            img_bytes.getvalue()).decode() + "'/>"
+                img_cpu_bytes = make_image_by_dots(data, 'cpu', 'dynamic')
+                img_mem_bytes = make_image_by_dots(data, 'memory', 'dynamic')
+                # img_tag1 = "<img src='data:image/png;base64," + base64.b64encode(
+                #             img_bytes.getvalue()).decode() + "'/>"
+                imgs = {}
+                imgs['first_image'] = "<img src='data:image/png;base64," + base64.b64encode(
+                    img_cpu_bytes.getvalue()).decode() + "'/>"
+                imgs['second_image'] = "<img src='data:image/png;base64," + base64.b64encode(img_mem_bytes.getvalue()).decode() + "'/>"
+                json_string = json.dumps(imgs)
 
-                await ws.send(img_tag1)
+                await ws.send(json_string)
                 await asyncio.sleep(UPDATE_DATA_TIME)
 
             except websockets.exceptions.ConnectionClosedOK:

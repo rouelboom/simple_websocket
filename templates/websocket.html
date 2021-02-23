@@ -14,8 +14,9 @@
                };
 
                ws.onmessage = function (evt) {
-                  var received_msg = evt.data;
-                  document.getElementById('test_1').innerHTML = received_msg;
+                  var received_msg = JSON.parse(evt.data);
+                  document.getElementById('test_1').innerHTML = received_msg.first_image;
+                  document.getElementById('test_2').innerHTML = received_msg.second_image;
 <!--                  alert("Message is received...", evt.data);-->
                };
 
@@ -38,5 +39,6 @@
       </div>
       <p>График процентной загруженности ЦП (Красный) и ОП(зеленый).</p>
       <p id="test_1"></p>
+      <p id="test_2"></p>
    </body>
 </html>

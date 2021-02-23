@@ -114,7 +114,7 @@ def get_middle_values(values):
             buffer.clear()
             print('middle values', len(middle_values))
 
-    if len(middle_values) > 0:
+    if len(buffer) > 0:
         middle_values.append(sum(buffer) / len(buffer))
         print('middle values last', len(middle_values))
     return middle_values
