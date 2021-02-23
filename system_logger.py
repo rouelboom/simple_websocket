@@ -7,10 +7,10 @@ import psutil
 from settings.settings import UPDATE_DATA_TIME
 
 # Масштаб осей. Если нужно увеличить масштаб графиков - нужно просто
-# поменять два параметра ниже
+# поменять следующие два параметра
 Y_SCALE = 2.5
 X_SCALE = 1.5
-# Параметры ниже менять не нужно, они настроены, кажется, почти идеально)
+# Параметры ниже меняsть не нужно, они настроены, кажется, почти идеально)
 # Количество отметок по осям Х и У
 LINES_COUNT = (60 / UPDATE_DATA_TIME) * 60
 TOTAL_PERCENTS = 100
@@ -26,6 +26,8 @@ X_LENGTH = LINES_COUNT * X_SCALE + AXIS_X_LENGTH
 VALUE_FOR_MINS_TEXT_POSITION = (X_LENGTH - AXIS_X_LENGTH) / 12
 
 FIVE_MIN_SCALE = 12
+
+TOTAL_RAM = psutil.virtual_memory().total / 1024 / 1024 / 1024
 
 
 def init_database():
@@ -113,17 +115,14 @@ def get_middle_values(values: list):
     i = 0
     middle_values = []
     for value in values:
-        # print(values[i])
         buffer.append(values[i])
         i += 1
         if len(buffer) == values_per_5_mins:
             middle_values.append(sum(buffer) / values_per_5_mins)
             buffer.clear()
-            print('middle values', len(middle_values))
 
     if len(buffer) > 0:
         middle_values.append(sum(buffer) / len(buffer))
-        print('middle values last', len(middle_values))
     return middle_values
 
 
@@ -172,10 +171,10 @@ def make_draw_area(type_of_graphic: str):
                    AXIS_Y_LENGTH - 5,
                    AXIS_X_LENGTH + (VALUE_FOR_MINS_TEXT_POSITION * (i)),
                    AXIS_Y_LENGTH + 5), fill=ImageColor.getrgb('black'))
-        time_text = f'{i * 5}'
-        draw.text((AXIS_X_LENGTH - 6 + (i * VALUE_FOR_MINS_TEXT_POSITION),
-                  AXIS_Y_LENGTH + 10), text=time_text,
-                  fill=ImageColor.getrgb("black"), font=myfont)
+        # time_text = f'{i * 5}'
+        # draw.text((AXIS_X_LENGTH - 6 + (i * VALUE_FOR_MINS_TEXT_POSITION),
+        #           AXIS_Y_LENGTH + 10), text=time_text,
+        #           fill=ImageColor.getrgb("black"), font=myfont)
 
     for i in range(720):
         draw.line((AXIS_X_LENGTH + (X_SCALE * (i + 1)), AXIS_Y_LENGTH - 2,
@@ -193,7 +192,20 @@ def make_draw_area(type_of_graphic: str):
                        AXIS_X_LENGTH + 5, AXIS_Y_LENGTH - (10 * Y_SCALE) * i),
                       fill=ImageColor.getrgb('black'))
     elif type_of_graphic == 'memory':
-        pass
+        for i in range(0, 5):
+            percent = f'{25 * i}%'
+            ram = f'{(TOTAL_RAM / 4) * i}gb'
+            draw.text((0, (AXIS_Y_LENGTH - 5) - (25 * Y_SCALE) * i),
+                      text=percent, fill=ImageColor.getrgb("black"),
+                      font=myfont)
+            if i > 0:
+                draw.text((40, (AXIS_Y_LENGTH - 5) - (25 * Y_SCALE) * i),
+                          text=ram, fill=ImageColor.getrgb("black"),
+                          font=myfont)
+            draw.line((AXIS_X_LENGTH - 5, AXIS_Y_LENGTH - (25 * Y_SCALE) * i,
+                       AXIS_X_LENGTH + 5, AXIS_Y_LENGTH - (25 * Y_SCALE) * i),
+                      fill=ImageColor.getrgb('black'))
+
     return image, draw
 
 
