@@ -15,8 +15,8 @@
 
                ws.onmessage = function (evt) {
                   var received_msg = JSON.parse(evt.data);
-                  document.getElementById('test_1').innerHTML = received_msg.first_image;
-                  document.getElementById('test_2').innerHTML = received_msg.second_image;
+                  document.getElementById('graphic_1').innerHTML = received_msg.first_image;
+                  document.getElementById('graphic_2').innerHTML = received_msg.second_image;
 <!--                  alert("Message is received...", evt.data);-->
                };
 
@@ -35,10 +35,12 @@
 
    <body>
       <div id = "sse">
-         <a href = "/">Back to static</a>
+         <p>На этой странице данные будут обновляться каждые 5 минут.</p>
+         <a href = "/">Перейти к статическому графку</a>
       </div>
-      <p>График процентной загруженности ЦП (Красный) и ОП(зеленый).</p>
-      <p id="test_1"></p>
-      <p id="test_2"></p>
+      <p>График процентной загруженности ЦП.</p>
+      <p id="graphic_1"></p>
+      <p>График занятой оперативной памяти.</p>
+      <p id="graphic_2"></p>
    </body>
 </html>

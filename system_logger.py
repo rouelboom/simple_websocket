@@ -6,9 +6,11 @@ import datetime as dt
 import psutil
 from settings.settings import UPDATE_DATA_TIME
 
-# Масштаб осей
+# Масштаб осей. Если нужно увеличить масштаб графиков - нужно просто
+# поменять два параметра ниже
 Y_SCALE = 2.5
 X_SCALE = 1.5
+# Параметры ниже менять не нужно, они настроены, кажется, почти идеально)
 # Количество отметок по осям Х и У
 LINES_COUNT = (60 / UPDATE_DATA_TIME) * 60
 TOTAL_PERCENTS = 100
@@ -76,22 +78,27 @@ def get_value_from_database():
 
 def make_image_by_dots(points: list, type_of_graphic: str,
                        type_of_statistic: str):
-    """ Функция получает на вход список данных из БД
-        В этом списке первый параметр - загрузка ЦПУ, второй - загрузка ОП
-        в момент времени.
-
+    """ Функция получает на вход список данных из БД и строки, по которым
+        будет понятно, какой график рисовать
         Функция возвращает изображение в байтовом виде"""
     image, draw = make_draw_area(type_of_graphic)
     cpu, mem = prepare_for_paint(points)
 
-    if type_of_statistic == 'dynamic':
-        draw_dynamic_image(cpu, 'red', draw)
-        # draw_dynamic_image(mem, 'green', draw)
-    elif type_of_statistic == 'static':
-        cpu = get_middle_values(cpu);
-        # mem = get_middle_values(mem)
-        draw_static_image(cpu, 'red', draw)
-        # draw_static_image(mem, 'green', draw)
+    if type_of_graphic == 'cpu':
+        if type_of_statistic == 'dynamic':
+            draw_dynamic_image(cpu, 'red', draw)
+        elif type_of_statistic == 'static':
+            cpu = get_middle_values(cpu);
+            draw_static_image(cpu, 'red', draw)
+    elif type_of_graphic == 'memory':
+        if type_of_statistic == 'dynamic':
+            draw_dynamic_image(mem, 'green', draw)
+        elif type_of_statistic == 'static':
+            mem = get_middle_values(mem)
+            draw_static_image(mem, 'green', draw)
+    else:
+        print('Wrong type of graphic!')
+
 
     img_file = BytesIO()
     image.save(img_file, format="PNG")
@@ -100,7 +107,7 @@ def make_image_by_dots(points: list, type_of_graphic: str,
     return img_file
 
 
-def get_middle_values(values):
+def get_middle_values(values: list):
     buffer = []
     values_per_5_mins = 60
     i = 0
@@ -179,10 +186,11 @@ def make_draw_area(type_of_graphic: str):
     if type_of_graphic == 'cpu':
         for i in range(11):
             percent = f'{10 * i}%'
-            draw.text((0, (AXIS_Y_LENGTH - 5) - 50 * i), text=percent,
-                      fill=ImageColor.getrgb("black"), font=myfont)
-            draw.line((AXIS_X_LENGTH - 5, AXIS_Y_LENGTH - 50 * i,
-                       AXIS_X_LENGTH + 5, AXIS_Y_LENGTH - 50 * i),
+            draw.text((0, (AXIS_Y_LENGTH - 5) - (10 * Y_SCALE) * i),
+                      text=percent, fill=ImageColor.getrgb("black"),
+                      font=myfont)
+            draw.line((AXIS_X_LENGTH - 5, AXIS_Y_LENGTH - (10 * Y_SCALE) * i,
+                       AXIS_X_LENGTH + 5, AXIS_Y_LENGTH - (10 * Y_SCALE) * i),
                       fill=ImageColor.getrgb('black'))
     elif type_of_graphic == 'memory':
         pass
@@ -200,53 +208,33 @@ def transform_x_coord_to_asixs(x: float):
 def prepare_for_paint(data):
     """ Функция решает вопрос с недостающими данными за последний час.
      Т.е если в течении часа программа работала не всё время - в тот момент
-     когда она не работала в программу заносятся нулевые значения ЦП и ОП
-     ------
-     Остался не решенный вопрос: если перезапускать программу быстрее чем за 5
-     секунд, то мы получим данные в БД с интервалом менее 1 сек. Эти данные
-     тоже отображаются на графике, и они находятся не на своём месте а также
-     сбивают положение всех послеющих точке по оси Х. Эта проблема не критична,
-     если не не перезапускать программу быстрее чем за 5 сек. """
+     когда она не работала в программу заносятся нулевые значения ЦП и ОП """
     times = []
 
+    # В какой-то момент определение типов из БД перестало работать и я не смог
+    # установить почему. Пришлось сгородить вот такую штуку
     for i in range(len(data)):
         times.append(dt.datetime.strptime(data[i][2], '%Y-%m-%d %H:%M:%S.%f'))
 
-    # for i in range(len(times) - 1):
-    #     print(times[i + 1] - times[i])
-
     y_mem = []
     y_cpu = []
-    list_to_del = []
-    inc = 0
     for i in range(len(data) - 1):
         # Если наблюдается время между данными больше 5+0.2 сек - в буффер
-        # добавляется нулевое значение логированного параметра
+        # добавляется нулевое значение логированного параметра.
         if times[i + 1] - times[i] > dt.timedelta(seconds=UPDATE_DATA_TIME,
                                                   milliseconds=200):
-            inc += 1
             delta = ((times[i + 1] - times[i]).seconds / UPDATE_DATA_TIME)
-            # print((times[i + 1] - times[i]))
             for j in range(int(delta)):
                 y_mem.append(0)
                 y_cpu.append(0)
 
             y_mem.append(data[i][1])
             y_cpu.append(data[i][0])
-        # # Если наткнулись на данные, у которых интервал менее 5-0.1 сек,
-        # # выпиливаем эти данные и потом заполним их нулевыми. Скорее всего
-        # # эти данные возникли из за слишком быстрого перезапуска программы
-        elif times[i + 1] - times[i] < dt.timedelta(seconds=UPDATE_DATA_TIME-1,
-                                                    milliseconds=900):
-            # print(('less!', times[i + 1] - times[i]))
-            list_to_del.append(i + 1)
-            y_mem.append(0)
-            y_cpu.append(0)
         else:
             y_mem.append(data[i][1])
             y_cpu.append(data[i][0])
 
-    if(len(data) > 1):
+    if len(data) > 1:
         last = len(data) - 1
         y_mem.append(data[last][1])
         y_cpu.append(data[last][0])

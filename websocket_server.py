@@ -41,8 +41,7 @@ class websocket_stream():
                 data = get_value_from_database()
                 img_cpu_bytes = make_image_by_dots(data, 'cpu', 'dynamic')
                 img_mem_bytes = make_image_by_dots(data, 'memory', 'dynamic')
-                # img_tag1 = "<img src='data:image/png;base64," + base64.b64encode(
-                #             img_bytes.getvalue()).decode() + "'/>"
+
                 imgs = {}
                 imgs['first_image'] = "<img src='data:image/png;base64," + base64.b64encode(
                     img_cpu_bytes.getvalue()).decode() + "'/>"
