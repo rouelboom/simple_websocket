@@ -1,2 +1,6 @@
-# simple_websocket
-simple websocket server with consumers and producer
+# algont_test_taks Сенокосов Павел Игоревич
+Для запуска программы необходим Python версии 3.8.5 и выше  
+Установите и запустите виртуальное окружение  
+Установите зависимости командой pip3 install -r requirments.txt  
+Запустите программу командой python main.py  
+После запуска програмы, откройте в браузере страницу 0.0.0.0:8080
