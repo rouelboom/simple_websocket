@@ -10,16 +10,16 @@ from settings.settings import UPDATE_DATA_TIME
 # поменять следующие два параметра
 Y_SCALE = 2.5
 X_SCALE = 1.5
-# Параметры ниже меняsть не нужно, они настроены, кажется, почти идеально)
+# Параметры ниже менять не нужно, они настроены, кажется, почти идеально)
 # Количество отметок по осям Х и У
 LINES_COUNT = (60 / UPDATE_DATA_TIME) * 60
 TOTAL_PERCENTS = 100
 # Вообще, это координата начальной точки в нашей системе координат
-AXIS_Y_LENGTH = TOTAL_PERCENTS * Y_SCALE + 20 # 520
+AXIS_Y_LENGTH = TOTAL_PERCENTS * Y_SCALE + 20
 AXIS_X_LENGTH = 30
 # Размер картинки
 IMG_WIDTH = LINES_COUNT * X_SCALE + AXIS_X_LENGTH + 20
-IMG_HIGTH = TOTAL_PERCENTS * Y_SCALE + 50
+IMG_HEIGHT = TOTAL_PERCENTS * Y_SCALE + 50
 # Конечная точка оси Х
 X_LENGTH = LINES_COUNT * X_SCALE + AXIS_X_LENGTH
 
@@ -50,6 +50,8 @@ async def system_log_process(period=5):
     while True:
         try:
             con, cursor = init_database()
+            # await тут а не в конце блока для того, чтобы программа не писала
+            # записи в бд при быстром перезапуске
             await asyncio.sleep(period)
             cpu = psutil.cpu_percent()
             memory = psutil.virtual_memory().percent
@@ -90,7 +92,7 @@ def make_image_by_dots(points: list, type_of_graphic: str,
         if type_of_statistic == 'dynamic':
             draw_dynamic_image(cpu, 'red', draw)
         elif type_of_statistic == 'static':
-            cpu = get_middle_values(cpu);
+            cpu = get_middle_values(cpu)
             draw_static_image(cpu, 'red', draw)
     elif type_of_graphic == 'memory':
         if type_of_statistic == 'dynamic':
@@ -100,7 +102,6 @@ def make_image_by_dots(points: list, type_of_graphic: str,
             draw_static_image(mem, 'green', draw)
     else:
         print('Wrong type of graphic!')
-
 
     img_file = BytesIO()
     image.save(img_file, format="PNG")
@@ -112,11 +113,11 @@ def make_image_by_dots(points: list, type_of_graphic: str,
 def get_middle_values(values: list):
     buffer = []
     values_per_5_mins = 60
-    i = 0
+
     middle_values = []
-    for value in values:
+    for i in range(len(values)):
         buffer.append(values[i])
-        i += 1
+
         if len(buffer) == values_per_5_mins:
             middle_values.append(sum(buffer) / values_per_5_mins)
             buffer.clear()
@@ -129,10 +130,10 @@ def get_middle_values(values: list):
 def draw_static_image(data: list, color: str, draw: ImageDraw):
     x = 0
     for i in range(len(data) - 1):
-        x1 = transform_x_coord_to_asixs(x)
-        x2 = transform_x_coord_to_asixs(x + 60)
-        y1 = transform_y_coord_to_asixs(data[i])
-        y2 = transform_y_coord_to_asixs(data[i + 1])
+        x1 = transform_x_coord_to_axis(x)
+        x2 = transform_x_coord_to_axis(x + 60)
+        y1 = transform_y_coord_to_axis(data[i])
+        y2 = transform_y_coord_to_axis(data[i + 1])
         draw.line((x1, y1, x2, y2), fill=ImageColor.getrgb(color=color))
         x += 60
 
@@ -141,10 +142,10 @@ def draw_dynamic_image(data: list, color: str, draw: ImageDraw):
     """Полученные данные преобразуются в координаты ХУ, по которым
        рисуется изображение."""
     for i in range(len(data) - 1):
-        x1 = transform_x_coord_to_asixs(i)
-        x2 = transform_x_coord_to_asixs(i + 1)
-        y1 = transform_y_coord_to_asixs(data[i])
-        y2 = transform_y_coord_to_asixs(data[i + 1])
+        x1 = transform_x_coord_to_axis(i)
+        x2 = transform_x_coord_to_axis(i + 1)
+        y1 = transform_y_coord_to_axis(data[i])
+        y2 = transform_y_coord_to_axis(data[i + 1])
 
         draw.line((x1, y1, x2, y2), fill=ImageColor.getrgb(color=color))
 
@@ -152,9 +153,9 @@ def draw_dynamic_image(data: list, color: str, draw: ImageDraw):
 def make_draw_area(type_of_graphic: str):
     """ Функиця рисует базовую область для графика, содержащую оси
         и прочую вспомогательную информацию"""
-    image = Image.new("RGB", (int(IMG_WIDTH), int(IMG_HIGTH)))
+    image = Image.new("RGB", (int(IMG_WIDTH), int(IMG_HEIGHT)))
     draw = ImageDraw.Draw(image)
-    draw.rectangle((0, 0, IMG_WIDTH, IMG_HIGTH),
+    draw.rectangle((0, 0, IMG_WIDTH, IMG_HEIGHT),
                    fill=ImageColor.getrgb("white"))
     myfont = ImageFont.truetype("arial.ttf", 12)
     # ось Х
@@ -163,18 +164,14 @@ def make_draw_area(type_of_graphic: str):
               fill=ImageColor.getrgb("black"))
     # ось Y
     draw.line((AXIS_X_LENGTH, 0, AXIS_X_LENGTH, AXIS_Y_LENGTH + 5),
-              fill=ImageColor.getrgb("black" ))
+              fill=ImageColor.getrgb("black"))
 
     # полосочки и циферки по оси X
     for i in range(13):
-        draw.line((AXIS_X_LENGTH + (VALUE_FOR_MINS_TEXT_POSITION * (i)),
+        draw.line((AXIS_X_LENGTH + (VALUE_FOR_MINS_TEXT_POSITION * i),
                    AXIS_Y_LENGTH - 5,
-                   AXIS_X_LENGTH + (VALUE_FOR_MINS_TEXT_POSITION * (i)),
+                   AXIS_X_LENGTH + (VALUE_FOR_MINS_TEXT_POSITION * i),
                    AXIS_Y_LENGTH + 5), fill=ImageColor.getrgb('black'))
-        # time_text = f'{i * 5}'
-        # draw.text((AXIS_X_LENGTH - 6 + (i * VALUE_FOR_MINS_TEXT_POSITION),
-        #           AXIS_Y_LENGTH + 10), text=time_text,
-        #           fill=ImageColor.getrgb("black"), font=myfont)
 
     for i in range(720):
         draw.line((AXIS_X_LENGTH + (X_SCALE * (i + 1)), AXIS_Y_LENGTH - 2,
@@ -209,11 +206,11 @@ def make_draw_area(type_of_graphic: str):
     return image, draw
 
 
-def transform_y_coord_to_asixs(y: float):
+def transform_y_coord_to_axis(y: float):
     return AXIS_Y_LENGTH - (y * Y_SCALE)
 
 
-def transform_x_coord_to_asixs(x: float):
+def transform_x_coord_to_axis(x: float):
     return AXIS_X_LENGTH + (x * X_SCALE)
 
 
@@ -251,7 +248,4 @@ def prepare_for_paint(data):
         y_mem.append(data[last][1])
         y_cpu.append(data[last][0])
 
-    # print('not converted len" ' + str(len(data)))
-    # print('converted len" ' + str(len(y_mem)))
-    # print('inc = ', inc)
     return y_cpu, y_mem
