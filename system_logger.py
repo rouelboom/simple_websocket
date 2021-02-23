@@ -6,19 +6,20 @@ import datetime as dt
 import psutil
 from settings.settings import UPDATE_DATA_TIME
 
-LINES_COUNT = (60 / UPDATE_DATA_TIME) * 60
-
-AXIS_Y_LENGTH = 520
-AXIS_X_LENGTH = 30
-
-Y_SCALE = 5
+# Масштаб осей
+Y_SCALE = 2.5
 X_SCALE = 1.5
-
-IMG_WIDTH = 1130
-IMG_HIGTH = 550
-
+# Количество отметок по осям Х и У
+LINES_COUNT = (60 / UPDATE_DATA_TIME) * 60
+TOTAL_PERCENTS = 100
+# Вообще, это координата начальной точки в нашей системе координат
+AXIS_Y_LENGTH = TOTAL_PERCENTS * Y_SCALE + 20 # 520
+AXIS_X_LENGTH = 30
+# Размер картинки
+IMG_WIDTH = LINES_COUNT * X_SCALE + AXIS_X_LENGTH + 20
+IMG_HIGTH = TOTAL_PERCENTS * Y_SCALE + 50
+# Конечная точка оси Х
 X_LENGTH = LINES_COUNT * X_SCALE + AXIS_X_LENGTH
-Y_LENGTH = LINES_COUNT * Y_SCALE + AXIS_Y_LENGTH
 
 VALUE_FOR_MINS_TEXT_POSITION = (X_LENGTH - AXIS_X_LENGTH) / 12
 
@@ -73,29 +74,31 @@ def get_value_from_database():
     return data
 
 
-def make_image_by_dots(points: list, type_of_statistic: str):
+def make_image_by_dots(points: list, type_of_graphic: str,
+                       type_of_statistic: str):
     """ Функция получает на вход список данных из БД
         В этом списке первый параметр - загрузка ЦПУ, второй - загрузка ОП
         в момент времени.
 
         Функция возвращает изображение в байтовом виде"""
-    image, draw = make_draw_area()
+    image, draw = make_draw_area(type_of_graphic)
     cpu, mem = prepare_for_paint(points)
 
     if type_of_statistic == 'dynamic':
         draw_dynamic_image(cpu, 'red', draw)
-        draw_dynamic_image(mem, 'green', draw)
+        # draw_dynamic_image(mem, 'green', draw)
     elif type_of_statistic == 'static':
         cpu = get_middle_values(cpu);
-        mem = get_middle_values(mem)
+        # mem = get_middle_values(mem)
         draw_static_image(cpu, 'red', draw)
-        draw_static_image(mem, 'green', draw)
+        # draw_static_image(mem, 'green', draw)
 
     img_file = BytesIO()
     image.save(img_file, format="PNG")
     img_file.seek(0)
 
     return img_file
+
 
 def get_middle_values(values):
     buffer = []
@@ -111,8 +114,9 @@ def get_middle_values(values):
             buffer.clear()
             print('middle values', len(middle_values))
 
-    middle_values.append(sum(buffer) / len(buffer))
-    print('middle values', len(middle_values))
+    if len(middle_values) > 0:
+        middle_values.append(sum(buffer) / len(buffer))
+        print('middle values last', len(middle_values))
     return middle_values
 
 
@@ -139,13 +143,14 @@ def draw_dynamic_image(data: list, color: str, draw: ImageDraw):
         draw.line((x1, y1, x2, y2), fill=ImageColor.getrgb(color=color))
 
 
-def make_draw_area():
+def make_draw_area(type_of_graphic: str):
     """ Функиця рисует базовую область для графика, содержащую оси
         и прочую вспомогательную информацию"""
-    image = Image.new("RGB", (IMG_WIDTH, IMG_HIGTH))
+    image = Image.new("RGB", (int(IMG_WIDTH), int(IMG_HIGTH)))
     draw = ImageDraw.Draw(image)
     draw.rectangle((0, 0, IMG_WIDTH, IMG_HIGTH),
                    fill=ImageColor.getrgb("white"))
+    myfont = ImageFont.truetype("arial.ttf", 12)
     # ось Х
     draw.line((AXIS_X_LENGTH - 5, AXIS_Y_LENGTH,
               X_LENGTH, AXIS_Y_LENGTH),
@@ -153,17 +158,6 @@ def make_draw_area():
     # ось Y
     draw.line((AXIS_X_LENGTH, 0, AXIS_X_LENGTH, AXIS_Y_LENGTH + 5),
               fill=ImageColor.getrgb("black" ))
-
-    myfont = ImageFont.truetype("arial.ttf", 12)
-
-    # полосочки и циферки по оси У
-    for i in range(11):
-        percent = f'{10 * i}%'
-        draw.text((0, (AXIS_Y_LENGTH - 5) - 50 * i), text=percent,
-                  fill=ImageColor.getrgb("black"), font=myfont)
-        draw.line((AXIS_X_LENGTH - 5, AXIS_Y_LENGTH - 50 * i,
-                   AXIS_X_LENGTH + 5, AXIS_Y_LENGTH - 50 * i),
-                  fill=ImageColor.getrgb('black'))
 
     # полосочки и циферки по оси X
     for i in range(13):
@@ -177,10 +171,21 @@ def make_draw_area():
                   fill=ImageColor.getrgb("black"), font=myfont)
 
     for i in range(720):
-        draw.line((AXIS_X_LENGTH + (1.5 * (i + 1)), AXIS_Y_LENGTH - 2,
-                   AXIS_X_LENGTH + (1.5 * (i + 1)), AXIS_Y_LENGTH + 2),
+        draw.line((AXIS_X_LENGTH + (X_SCALE * (i + 1)), AXIS_Y_LENGTH - 2,
+                   AXIS_X_LENGTH + (X_SCALE * (i + 1)), AXIS_Y_LENGTH + 2),
                   fill=ImageColor.getrgb('blue'))
 
+    # полосочки и циферки по оси У
+    if type_of_graphic == 'cpu':
+        for i in range(11):
+            percent = f'{10 * i}%'
+            draw.text((0, (AXIS_Y_LENGTH - 5) - 50 * i), text=percent,
+                      fill=ImageColor.getrgb("black"), font=myfont)
+            draw.line((AXIS_X_LENGTH - 5, AXIS_Y_LENGTH - 50 * i,
+                       AXIS_X_LENGTH + 5, AXIS_Y_LENGTH - 50 * i),
+                      fill=ImageColor.getrgb('black'))
+    elif type_of_graphic == 'memory':
+        pass
     return image, draw
 
 
@@ -215,27 +220,28 @@ def prepare_for_paint(data):
     list_to_del = []
     inc = 0
     for i in range(len(data) - 1):
-        # Если наблюдается время между данными больше 5+0.1 сек - в буффер
+        # Если наблюдается время между данными больше 5+0.2 сек - в буффер
         # добавляется нулевое значение логированного параметра
-        if times[i + 1] - times[i] > dt.timedelta(seconds=5, milliseconds=200):
+        if times[i + 1] - times[i] > dt.timedelta(seconds=UPDATE_DATA_TIME,
+                                                  milliseconds=200):
+            inc += 1
             delta = ((times[i + 1] - times[i]).seconds / UPDATE_DATA_TIME)
             print((times[i + 1] - times[i]))
             for j in range(int(delta)):
                 y_mem.append(0)
                 y_cpu.append(0)
-                inc += 1
+
             y_mem.append(data[i][1])
             y_cpu.append(data[i][0])
         # # Если наткнулись на данные, у которых интервал менее 5-0.1 сек,
         # # выпиливаем эти данные и потом заполним их нулевыми. Скорее всего
         # # эти данные возникли из за слишком быстрого перезапуска программы
-        elif times[i + 1] - times[i] < dt.timedelta(seconds=4,
+        elif times[i + 1] - times[i] < dt.timedelta(seconds=UPDATE_DATA_TIME-1,
                                                     milliseconds=900):
             print(('less!', times[i + 1] - times[i]))
             list_to_del.append(i + 1)
             y_mem.append(0)
             y_cpu.append(0)
-            inc += 1
         else:
             y_mem.append(data[i][1])
             y_cpu.append(data[i][0])
