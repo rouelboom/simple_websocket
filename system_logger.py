@@ -44,8 +44,8 @@ def init_database():
 async def system_log_process(period=5):
     while True:
         try:
-            await asyncio.sleep(period)
             con, cursor = init_database()
+            await asyncio.sleep(period)
             cpu = psutil.cpu_percent()
             memory = psutil.virtual_memory().percent
             now_time = dt.datetime.now()
@@ -87,6 +87,7 @@ def make_image_by_dots(points: list, type_of_statistic: str):
         draw_dynamic_image(mem, 'green', draw)
     elif type_of_statistic == 'static':
         cpu = get_middle_values(cpu);
+        mem = get_middle_values(mem)
         draw_static_image(cpu, 'red', draw)
         draw_static_image(mem, 'green', draw)
 
@@ -96,17 +97,22 @@ def make_image_by_dots(points: list, type_of_statistic: str):
 
     return img_file
 
-def get_middle_values(cpu):
+def get_middle_values(values):
     buffer = []
+    values_per_5_mins = 60
     i = 0
     middle_values = []
-    for value in cpu:
-        buffer.append(cpu.pop(i))
-        if len(buffer) == 60:# or len(cpu) == 0:
-            middle_values.append(sum(buffer) / 60)
+    for value in values:
+        # print(values[i])
+        buffer.append(values[i])
+        i += 1
+        if len(buffer) == values_per_5_mins:
+            middle_values.append(sum(buffer) / values_per_5_mins)
             buffer.clear()
-            i += 1
             print('middle values', len(middle_values))
+
+    middle_values.append(sum(buffer) / len(buffer))
+    print('middle values', len(middle_values))
     return middle_values
 
 
@@ -201,35 +207,45 @@ def prepare_for_paint(data):
     for i in range(len(data)):
         times.append(dt.datetime.strptime(data[i][2], '%Y-%m-%d %H:%M:%S.%f'))
 
+    # for i in range(len(times) - 1):
+    #     print(times[i + 1] - times[i])
+
     y_mem = []
     y_cpu = []
     list_to_del = []
+    inc = 0
     for i in range(len(data) - 1):
-        # Если наблюдается время между данными больше 5+1 сек - в буффер
+        # Если наблюдается время между данными больше 5+0.1 сек - в буффер
         # добавляется нулевое значение логированного параметра
-        if times[i + 1] - times[i] > dt.timedelta(seconds=5.1):
-            delta = ((times[i + 1] - times[i]).seconds / 5)
+        if times[i + 1] - times[i] > dt.timedelta(seconds=5, milliseconds=200):
+            delta = ((times[i + 1] - times[i]).seconds / UPDATE_DATA_TIME)
+            print((times[i + 1] - times[i]))
             for j in range(int(delta)):
                 y_mem.append(0)
                 y_cpu.append(0)
-                y_mem.append(data[i][1])
-                y_cpu.append(data[i][0])
-        # # Если наткнулись на данные, у которых интервал менее 5-0.5 сек,
+                inc += 1
+            y_mem.append(data[i][1])
+            y_cpu.append(data[i][0])
+        # # Если наткнулись на данные, у которых интервал менее 5-0.1 сек,
         # # выпиливаем эти данные и потом заполним их нулевыми. Скорее всего
         # # эти данные возникли из за слишком быстрого перезапуска программы
-        elif times[i + 1] - times[i] < dt.timedelta(seconds=4.9):
+        elif times[i + 1] - times[i] < dt.timedelta(seconds=4,
+                                                    milliseconds=900):
+            print(('less!', times[i + 1] - times[i]))
             list_to_del.append(i + 1)
             y_mem.append(0)
             y_cpu.append(0)
+            inc += 1
         else:
             y_mem.append(data[i][1])
             y_cpu.append(data[i][0])
 
-    last = len(data) - 1
-    y_mem.append(data[last][1])
-    y_cpu.append(data[last][0])
+    if(len(data) > 1):
+        last = len(data) - 1
+        y_mem.append(data[last][1])
+        y_cpu.append(data[last][0])
 
     print('not converted len" ' + str(len(data)))
     print('converted len" ' + str(len(y_mem)))
-    print('list to delet" ' + str(len(list_to_del)))
+    print('inc = ', inc)
     return y_cpu, y_mem
